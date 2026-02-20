@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { leads as mockLeads } from '@/data/mockData';
+import leadService from '@/services/leadService';
 import {
   Search, Plus, Filter, Download, Phone, Mail, Edit2, Trash2, Eye,
   User, Building2, FileText, Clock, MessageCircle, Calendar as CalIcon,
@@ -156,7 +157,9 @@ const formatSize = (bytes: number) => {
 // COMPONENT
 // ========================================
 export function LeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>(() => mockLeads.map(enrichLead));
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -169,6 +172,28 @@ export function LeadsPage() {
   const [newInteraction, setNewInteraction] = useState('');
   const [interactionType, setInteractionType] = useState('note');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Carrega leads da API ao montar o componente
+  useEffect(() => {
+    loadLeads();
+  }, []);
+
+  const loadLeads = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await leadService.getAll();
+      const leadsData = Array.isArray(response.leads) ? response.leads : Array.isArray(response) ? response : [];
+      setLeads(leadsData);
+    } catch (err: any) {
+      console.error('Erro ao carregar leads:', err);
+      setError(err.response?.data?.message || 'Erro ao carregar leads');
+      // Se falhar, carrega mock dados como fallback
+      setLeads(mockLeads.map(enrichLead));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = leads.filter(l => {
     const s = searchTerm.toLowerCase();
@@ -185,31 +210,40 @@ export function LeadsPage() {
     totalValue: leads.reduce((s, l) => s + (l.value || 0), 0),
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este lead?')) return;
-    setLeads(prev => prev.filter(l => l._id !== id));
-    if (selectedLead?._id === id) setSelectedLead(null);
+    try {
+      await leadService.delete(id);
+      setLeads(prev => prev.filter(l => l._id !== id));
+      if (selectedLead?._id === id) setSelectedLead(null);
+    } catch (err: any) {
+      alert('Erro ao deletar lead: ' + (err.response?.data?.message || err.message));
+    }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    setTimeout(() => {
-      if (editData._id) {
+    try {
+      if (editData._id && !editData._id.startsWith('new-')) {
+        // Atualizar lead existente
+        await leadService.update(editData._id, editData);
         const updated = leads.map(l => l._id === editData._id ? { ...l, ...editData } as Lead : l);
         setLeads(updated);
         setSelectedLead(updated.find(l => l._id === editData._id) || null);
       } else {
-        const newLead: Lead = {
-          ...editData, _id: 'new-' + Date.now(), createdAt: new Date().toISOString(),
-          documents: [], interactions: [{ id: 'i-new', type: 'system', content: 'Lead criado no sistema', userName: 'Você', createdAt: new Date().toISOString() }],
-          meetings: [], messages: [], tags: editData.tags || [],
-        } as Lead;
+        // Criar novo lead
+        const response = await leadService.create(editData);
+        const newLead = response.lead || response;
         setLeads(prev => [newLead, ...prev]);
-        setSelectedLead(newLead);
+        setSelectedLead(newLead as Lead);
       }
-      setIsSaving(false); setIsEditing(false);
-    }, 600);
+      setIsEditing(false);
+    } catch (err: any) {
+      alert('Erro ao salvar lead: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const startCreate = () => {
@@ -226,23 +260,49 @@ export function LeadsPage() {
     setSelectedLead(lead); setIsEditing(false); setActiveTab('dados');
   };
 
-  const handleConvert = (lead: Lead) => {
+  const handleConvert = async (lead: Lead) => {
     if (!confirm(`Converter "${lead.name}" para Cliente?`)) return;
-    const updated = leads.map(l => l._id === lead._id ? {
-      ...l, isClient: true, status: 'ganho' as const, convertedToClientAt: new Date().toISOString(),
-      interactions: [...(l.interactions || []), { id: 'conv-' + Date.now(), type: 'conversion', content: 'Lead convertido para Cliente', userName: 'Você', createdAt: new Date().toISOString() }],
-    } : l);
-    setLeads(updated);
-    setSelectedLead(updated.find(l => l._id === lead._id) || null);
+    try {
+      const updatedData = {
+        ...lead,
+        isClient: true,
+        status: 'ganho' as const,
+        convertedToClientAt: new Date().toISOString(),
+      };
+      await leadService.update(lead._id, updatedData);
+      const updated = leads.map(l =>
+        l._id === lead._id ? updatedData : l
+      );
+      setLeads(updated);
+      setSelectedLead(updated.find(l => l._id === lead._id) || null);
+    } catch (err: any) {
+      alert('Erro ao converter lead: ' + (err.response?.data?.message || err.message));
+    }
   };
 
-  const handleAddInteraction = () => {
+  const handleAddInteraction = async () => {
     if (!newInteraction.trim() || !selectedLead) return;
-    const interaction: Interaction = { id: 'int-' + Date.now(), type: interactionType, content: newInteraction, userName: 'Você', createdAt: new Date().toISOString() };
-    const updated = leads.map(l => l._id === selectedLead._id ? { ...l, interactions: [...(l.interactions || []), interaction] } : l);
-    setLeads(updated);
-    setSelectedLead(updated.find(l => l._id === selectedLead._id) || null);
-    setNewInteraction(''); setInteractionType('note');
+    try {
+      const interaction: Interaction = {
+        id: 'int-' + Date.now(),
+        type: interactionType,
+        content: newInteraction,
+        userName: 'Você',
+        createdAt: new Date().toISOString(),
+      };
+      const updatedLead = {
+        ...selectedLead,
+        interactions: [...(selectedLead.interactions || []), interaction],
+      };
+      await leadService.update(selectedLead._id, updatedLead);
+      const updated = leads.map(l => l._id === selectedLead._id ? updatedLead : l);
+      setLeads(updated);
+      setSelectedLead(updatedLead);
+      setNewInteraction('');
+      setInteractionType('note');
+    } catch (err: any) {
+      alert('Erro ao adicionar interação: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -285,6 +345,33 @@ export function LeadsPage() {
   // ---- RENDER ----
   return (
     <div className="p-4 lg:p-6 space-y-4">
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <span className="ml-3 text-slate-600">Carregando leads...</span>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-red-900">Erro ao carregar dados</h3>
+            <p className="text-sm text-red-800">{error}</p>
+            <button
+              onClick={loadLeads}
+              className="text-sm font-semibold text-red-700 hover:text-red-900 mt-2 underline"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!loading && (
+        <>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -835,6 +922,8 @@ export function LeadsPage() {
             </div>
           )}
         </SlideOver>
+      )}
+        </>
       )}
     </div>
   );

@@ -9,13 +9,16 @@ import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/nexuscrm';
 
-console.log('🔌 MongoDB URI:', MONGODB_URI);
+console.log('🔌 MongoDB URI:', MONGODB_URI.replace(/:[^:]*@/, ':***@')); // Oculta senha nos logs
 
 const options = {
-  maxPoolSize: 10,
+  maxPoolSize: process.env.NODE_ENV === 'production' ? 100 : 10,
+  minPoolSize: process.env.NODE_ENV === 'production' ? 10 : 1,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
   family: 4,
+  retryWrites: true,
+  w: 'majority',
 };
 
 /**
