@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // Detectar se é produção ou desenvolvimento
 const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://api.projeto.kreativ.ae/api'  // URL de produção
-  : 'http://localhost:4000/api';           // URL de desenvolvimento
+  ? 'https://projeto-crm-i35k.onrender.com/api'  // URL de produção
+  : 'http://localhost:4000/api';                  // URL de desenvolvimento
 
 const api = axios.create({
   baseURL: API_BASE_URL,
