@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
@@ -108,7 +109,6 @@ router.post('/', async (req, res) => {
     // Converter tenantId para ObjectId se for string
     let tenantId = req.tenantId;
     if (typeof tenantId === 'string') {
-      const mongoose = require('mongoose');
       if (mongoose.Types.ObjectId.isValid(tenantId)) {
         tenantId = new mongoose.Types.ObjectId(tenantId);
       } else {
@@ -164,14 +164,13 @@ router.put('/:id', async (req, res) => {
     // Converter tenantId para ObjectId se necessário
     let tenantId = req.tenantId;
     if (typeof tenantId === 'string') {
-      const mongoose = require('mongoose');
       if (mongoose.Types.ObjectId.isValid(tenantId)) {
         tenantId = new mongoose.Types.ObjectId(tenantId);
       }
     }
 
     const leadId = req.params.id;
-    if (!require('mongoose').Types.ObjectId.isValid(leadId)) {
+    if (!mongoose.Types.ObjectId.isValid(leadId)) {
       return res.status(400).json({ error: 'ID do lead inválido' });
     }
 
