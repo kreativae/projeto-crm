@@ -7,7 +7,9 @@
 
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://kreativae:<@Aa680680>@projeto-crm.xltdck4.mongodb.net/';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/nexuscrm';
+
+console.log('🔌 MongoDB URI:', MONGODB_URI);
 
 const options = {
   maxPoolSize: 10,

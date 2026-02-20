@@ -1,0 +1,12 @@
+{
+  "name": "nexuscrm-database",
+  "version": "1.0.0",
+  "description": "NexusCRM - Database Models & Connection",
+  "type": "module",
+  "dependencies": {
+    "mongoose": "^8.10.0",
+    "dotenv": "^16.4.7",
+    "bcryptjs": "^2.4.3",
+    "uuid": "^11.1.0"
+  }
+}

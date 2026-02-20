@@ -5,6 +5,9 @@
 // Stack: Node.js + Express + MongoDB (Mongoose)
 // ============================================================
 
+import dotenv from 'dotenv';
+dotenv.config(); // Carregar .env PRIMEIRO
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
