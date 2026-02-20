@@ -98,35 +98,97 @@ router.get('/:id', async (req, res) => {
 // POST /api/leads — Criar lead
 router.post('/', async (req, res) => {
   try {
-    const lead = new req.app.locals.Lead({
-      ...req.body,
-      tenantId: req.tenantId,
-    });
+    const { name, email, phone, mobile, company, value, status, source, tags } = req.body;
+
+    // Validações básicas
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'Nome é obrigatório e deve ser texto' });
+    }
+
+    // Converter tenantId para ObjectId se for string
+    let tenantId = req.tenantId;
+    if (typeof tenantId === 'string') {
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(tenantId)) {
+        tenantId = new mongoose.Types.ObjectId(tenantId);
+      } else {
+        // Se não for um ObjectId válido, buscar ou criar Tenant
+        const Tenant = req.app.locals.Tenant;
+        let tenant = await Tenant.findOne({ name: 'Demo Tenant' });
+        if (!tenant) {
+          tenant = await Tenant.create({
+            name: 'Demo Tenant',
+            primaryColor: '#6366f1',
+            plan: 'professional',
+          });
+        }
+        tenantId = tenant._id;
+      }
+    }
+
+    const leadData = {
+      name: name.trim(),
+      email: email?.toLowerCase().trim() || undefined,
+      phone: phone?.trim() || undefined,
+      mobile: mobile?.trim() || undefined,
+      company: company || undefined,
+      value: value ? Number(value) : 0,
+      status: status || 'novo',
+      source: source || 'outro',
+      tags: Array.isArray(tags) ? tags : [],
+      tenantId: tenantId,
+    };
+
+    const lead = new req.app.locals.Lead(leadData);
     lead.interactions.push({
       type: 'system',
       content: 'Lead criado no sistema',
       userId: req.user._id,
-      userName: req.user.name,
+      userName: req.user.name || 'Sistema',
     });
+
     await lead.save();
     res.status(201).json(lead);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Erro ao criar lead:', err);
+    res.status(400).json({ 
+      error: err.message,
+      details: err.errors ? Object.keys(err.errors).map(k => err.errors[k].message) : undefined
+    });
   }
 });
 
 // PUT /api/leads/:id — Atualizar lead
 router.put('/:id', async (req, res) => {
   try {
+    // Converter tenantId para ObjectId se necessário
+    let tenantId = req.tenantId;
+    if (typeof tenantId === 'string') {
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(tenantId)) {
+        tenantId = new mongoose.Types.ObjectId(tenantId);
+      }
+    }
+
+    const leadId = req.params.id;
+    if (!require('mongoose').Types.ObjectId.isValid(leadId)) {
+      return res.status(400).json({ error: 'ID do lead inválido' });
+    }
+
     const lead = await req.app.locals.Lead.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
+      { _id: leadId, tenantId: tenantId },
       { $set: req.body },
       { new: true, runValidators: true }
     );
+    
     if (!lead) return res.status(404).json({ error: 'Lead não encontrado' });
     res.json(lead);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Erro ao atualizar lead:', err);
+    res.status(400).json({ 
+      error: err.message,
+      details: err.errors ? Object.keys(err.errors).map(k => err.errors[k].message) : undefined
+    });
   }
 });
 

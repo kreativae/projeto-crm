@@ -224,31 +224,78 @@ export function LeadsPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    
     try {
+      // Validação básica
+      if (!editData.name || typeof editData.name !== 'string' || !editData.name.trim()) {
+        alert('Nome é obrigatório');
+        setIsSaving(false);
+        return;
+      }
+
+      // Preparar dados para envio
+      const leadToSend = {
+        ...editData,
+        name: editData.name.trim(),
+        email: editData.email?.trim() || undefined,
+        phone: editData.phone?.trim() || undefined,
+        mobile: editData.mobile?.trim() || undefined,
+        value: editData.value ? Number(editData.value) : 0,
+        score: editData.score ? Number(editData.score) : 0,
+        // Não enviar campos internos que o backend não reconhece
+        _id: undefined,
+        documents: undefined,
+        interactions: undefined,
+        meetings: undefined,
+        messages: undefined,
+        isClient: undefined,
+        convertedToClientAt: undefined,
+      };
+
       if (editData._id && !editData._id.startsWith('new-')) {
         // Atualizar lead existente
-        await leadService.update(editData._id, editData);
-        const updated = leads.map(l => l._id === editData._id ? { ...l, ...editData } as Lead : l);
+        const result = await leadService.update(editData._id, leadToSend as any);
+        const updated = leads.map(l => l._id === editData._id ? { ...l, ...result } as Lead : l);
         setLeads(updated);
         setSelectedLead(updated.find(l => l._id === editData._id) || null);
       } else {
         // Criar novo lead
-        const response = await leadService.create(editData);
-        const newLead = response.lead || response;
-        setLeads(prev => [newLead, ...prev]);
+        const result = await leadService.create(leadToSend as any);
+        const newLead = result.lead || result;
+        setLeads(prev => [newLead as Lead, ...prev]);
         setSelectedLead(newLead as Lead);
       }
       setIsEditing(false);
     } catch (err: any) {
-      alert('Erro ao salvar lead: ' + (err.response?.data?.message || err.message));
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      console.error('Erro ao salvar:', err);
+      alert('Erro ao salvar lead: ' + errorMsg);
     } finally {
       setIsSaving(false);
     }
   };
 
   const startCreate = () => {
-    setEditData({ name: '', email: '', phone: '', mobile: '', company: '', type: 'PF', document: '', status: 'novo', source: 'outro', value: 0, tags: [], temperature: 'cold', score: 0, notes: '', address: {} });
-    setIsEditing(true); setSelectedLead(null); setActiveTab('dados');
+    setEditData({
+      name: '',
+      email: '',
+      phone: '',
+      mobile: '',
+      company: { name: '' },
+      type: 'PF',
+      document: '',
+      status: 'novo',
+      source: 'outro',
+      value: 0,
+      tags: [],
+      temperature: 'cold',
+      score: 0,
+      notes: '',
+      address: {},
+    });
+    setIsEditing(true);
+    setSelectedLead(null);
+    setActiveTab('dados');
   };
 
   const startEdit = (lead: Lead) => {
@@ -573,9 +620,21 @@ export function LeadsPage() {
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2"><Building2 className="h-4 w-4 text-purple-500" /> Dados da Empresa</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div><label className="block text-xs font-semibold text-slate-600 mb-1.5">Razão Social</label>
-                      <input className="w-full p-3 border border-slate-200 rounded-xl text-sm" value={editData.company || ''} onChange={e => setEditData({ ...editData, company: e.target.value })} /></div>
+                      <input className="w-full p-3 border border-slate-200 rounded-xl text-sm" 
+                        value={(typeof editData.company === 'object' && editData.company?.name) || (typeof editData.company === 'string' ? editData.company : '') || ''} 
+                        onChange={e => setEditData({ 
+                          ...editData, 
+                          company: typeof editData.company === 'object' ? { ...editData.company, name: e.target.value } : { name: e.target.value }
+                        })} />
+                    </div>
                     <div><label className="block text-xs font-semibold text-slate-600 mb-1.5">Website</label>
-                      <input className="w-full p-3 border border-slate-200 rounded-xl text-sm" placeholder="https://" /></div>
+                      <input className="w-full p-3 border border-slate-200 rounded-xl text-sm" placeholder="https://" 
+                        value={(typeof editData.company === 'object' && editData.company?.website) || ''}
+                        onChange={e => setEditData({ 
+                          ...editData, 
+                          company: typeof editData.company === 'object' ? { ...editData.company, website: e.target.value } : { website: e.target.value }
+                        })} />
+                    </div>
                   </div>
                 </div>
               )}
