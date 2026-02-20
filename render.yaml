@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: nexuscrm-api
+    env: node
+    plan: free
+    root: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        scope: build,runtime
+      - key: PORT
+        value: 4000
+      - key: JWT_ACCESS_SECRET
+        scope: build,runtime
+      - key: JWT_REFRESH_SECRET
+        scope: build,runtime
+      - key: CORS_ORIGIN
+        value: https://projeto.kreativ.ae
+      - key: JWT_ACCESS_EXPIRES
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES
+        value: 7d
