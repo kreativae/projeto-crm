@@ -1,0 +1,11 @@
+[build]
+  # O comando para gerar a versão de produção
+  command = "npm run build"
+  
+  # A pasta que o Netlify deve servir (para React geralmente é 'dist' ou 'build')
+  publish = "dist"
+
+[[redirects]]
+  # Essencial para React Router: redireciona todas as rotas para o index.html
+  from = "/*"
+  status = 200
