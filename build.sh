@@ -2,11 +2,9 @@
 set -e
 
 echo "📦 Instalando dependências do backend..."
-cd backend
-npm install
+npm --prefix backend install
 
 echo "📦 Instalando dependências do bancodedados..."
-cd ../bancodedados
-npm install
+npm --prefix bancodedados install
 
 echo "✅ Build concluído!"
