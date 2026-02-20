@@ -3,10 +3,39 @@ import express from 'express';
 const router = express.Router();
 
 // Middleware placeholder (substituir pelos reais)
-const auth = (req, res, next) => {
-  req.user = req.user || { _id: 'demo', tenantId: 'demo', name: 'Demo' };
-  req.tenantId = req.user.tenantId;
-  next();
+const auth = async (req, res, next) => {
+  try {
+    // Se não há user, criar um demo
+    if (!req.user) {
+      const Tenant = req.app.locals.Tenant;
+      let tenant = await Tenant.findOne({ name: 'Demo Tenant' });
+      
+      if (!tenant) {
+        tenant = await Tenant.create({
+          name: 'Demo Tenant',
+          primaryColor: '#6366f1',
+          plan: 'professional',
+        });
+      }
+
+      req.user = {
+        _id: 'demo-user',
+        tenantId: tenant._id.toString(),
+        name: 'Demo User',
+      };
+    }
+    req.tenantId = req.user.tenantId;
+    next();
+  } catch (error) {
+    console.error('Erro no middleware auth:', error);
+    req.user = {
+      _id: 'demo-user',
+      tenantId: 'demo',
+      name: 'Demo User',
+    };
+    req.tenantId = req.user.tenantId;
+    next();
+  }
 };
 
 router.use(auth);
@@ -19,6 +48,11 @@ router.use(auth);
 router.get('/', async (req, res) => {
   try {
     const { status, isClient, search, source, tag, page = 1, limit = 50 } = req.query;
+    
+    if (!req.app.locals.Lead) {
+      return res.status(500).json({ error: 'Modelo Lead não foi registrado no servidor' });
+    }
+
     const filter = { tenantId: req.tenantId };
     if (status) filter.status = status;
     if (isClient !== undefined) filter.isClient = isClient === 'true';
@@ -41,7 +75,8 @@ router.get('/', async (req, res) => {
 
     res.json({ leads, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Erro ao buscar leads:', err);
+    res.status(500).json({ error: err.message, details: err.toString() });
   }
 });
 

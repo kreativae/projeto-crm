@@ -28,6 +28,16 @@ import templateRoutes from './routes/template.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
+// Importar modelos Mongoose
+import Lead from '../bancodedados/models/Lead.js';
+import User from '../bancodedados/models/User.js';
+import Tenant from '../bancodedados/models/Tenant.js';
+import Message from '../bancodedados/models/Message.js';
+import Automation from '../bancodedados/models/Automation.js';
+import CalendarEvent from '../bancodedados/models/CalendarEvent.js';
+import AIConversation from '../bancodedados/models/AIConversation.js';
+import Session from '../bancodedados/models/Session.js';
+
 const app = express();
 
 // ============================================================
@@ -118,6 +128,16 @@ const startServer = async () => {
     // Conectar ao MongoDB
     await connectDB();
     console.log('✅ MongoDB conectado com sucesso');
+
+    // Registrar modelos em app.locals para uso nas rotas
+    app.locals.Lead = Lead;
+    app.locals.User = User;
+    app.locals.Tenant = Tenant;
+    app.locals.Message = Message;
+    app.locals.Automation = Automation;
+    app.locals.CalendarEvent = CalendarEvent;
+    app.locals.AIConversation = AIConversation;
+    app.locals.Session = Session;
 
     // Iniciar servidor
     app.listen(config.port, () => {
