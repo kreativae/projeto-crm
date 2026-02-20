@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "NexusCRM - Database Models & Connection",
   "type": "module",
+  "scripts": {
+    "reset": "node scripts/resetDB.js",
+    "seed": "node seeds/seed.js"
+  },
   "dependencies": {
     "mongoose": "^8.10.0",
     "dotenv": "^16.4.7",
