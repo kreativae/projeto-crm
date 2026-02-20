@@ -3,14 +3,23 @@ import mongoose from 'mongoose';
 
 const router = express.Router();
 
+// Helper function para garantir ObjectId válido
+const ensureObjectId = (value) => {
+  if (mongoose.Types.ObjectId.isValid(value)) {
+    return value instanceof mongoose.Types.ObjectId ? value : new mongoose.Types.ObjectId(value);
+  }
+  return value;
+};
+
 // Middleware placeholder (substituir pelos reais)
 const auth = async (req, res, next) => {
   try {
     // Se não há user, criar um demo
     if (!req.user) {
       const Tenant = req.app.locals.Tenant;
-      let tenant = await Tenant.findOne({ name: 'Demo Tenant' });
+      const User = req.app.locals.User;
       
+      let tenant = await Tenant.findOne({ name: 'Demo Tenant' });
       if (!tenant) {
         tenant = await Tenant.create({
           name: 'Demo Tenant',
@@ -19,19 +28,34 @@ const auth = async (req, res, next) => {
         });
       }
 
+      // Buscar ou criar usuário demo
+      let user = await User.findOne({ email: 'demo@demo.com' });
+      if (!user) {
+        user = await User.create({
+          name: 'Demo User',
+          email: 'demo@demo.com',
+          tenantId: tenant._id,
+          role: 'admin',
+          status: 'active',
+        });
+      }
+
       req.user = {
-        _id: 'demo-user',
+        _id: user._id,
         tenantId: tenant._id.toString(),
-        name: 'Demo User',
+        name: user.name,
       };
     }
     req.tenantId = req.user.tenantId;
     next();
   } catch (error) {
     console.error('Erro no middleware auth:', error);
+    // Criar um ObjectId válido para fallback
+    const demoUserId = new mongoose.Types.ObjectId();
+    const demoTenantId = new mongoose.Types.ObjectId();
     req.user = {
-      _id: 'demo-user',
-      tenantId: 'demo',
+      _id: demoUserId,
+      tenantId: demoTenantId.toString(),
       name: 'Demo User',
     };
     req.tenantId = req.user.tenantId;
@@ -140,10 +164,11 @@ router.post('/', async (req, res) => {
     };
 
     const lead = new req.app.locals.Lead(leadData);
+    
     lead.interactions.push({
       type: 'system',
       content: 'Lead criado no sistema',
-      userId: req.user._id,
+      userId: ensureObjectId(req.user._id),
       userName: req.user.name || 'Sistema',
     });
 
@@ -215,7 +240,7 @@ router.post('/:id/interactions', async (req, res) => {
     lead.interactions.push({
       type: req.body.type || 'note',
       content: req.body.content,
-      userId: req.user._id,
+      userId: ensureObjectId(req.user._id),
       userName: req.user.name,
       metadata: req.body.metadata,
     });
@@ -243,7 +268,7 @@ router.post('/:id/documents', async (req, res) => {
       mimeType: req.body.mimeType,
       size: req.body.size,
       data: req.body.data, // Base64
-      uploadedBy: req.user._id,
+      uploadedBy: ensureObjectId(req.user._id),
       uploadedByName: req.user.name,
     };
 
@@ -251,7 +276,7 @@ router.post('/:id/documents', async (req, res) => {
     lead.interactions.push({
       type: 'document',
       content: `Documento "${req.body.name}" anexado`,
-      userId: req.user._id,
+      userId: ensureObjectId(req.user._id),
       userName: req.user.name,
     });
     await lead.save();
@@ -291,7 +316,7 @@ router.post('/:id/convert', async (req, res) => {
     lead.interactions.push({
       type: 'conversion',
       content: 'Lead convertido para Cliente',
-      userId: req.user._id,
+      userId: ensureObjectId(req.user._id),
       userName: req.user.name,
     });
     await lead.save();
