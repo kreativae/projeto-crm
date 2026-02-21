@@ -1,9 +1,25 @@
 import axios from 'axios';
 
-// Detectar a URL do backend de forma dinâmica
-const API_BASE_URL = import.meta.env.PROD 
-  ? `${window.location.origin}/api`  // Using the same domain in production
-  : 'http://localhost:4000/api';      // localhost in development
+// Detectar a URL do backend baseado no hostname
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname;
+  
+  // Em produção em projeto.kreativ.ae
+  if (hostname === 'projeto.kreativ.ae' || hostname === 'www.projeto.kreativ.ae') {
+    return 'https://projeto-crm-1.onrender.com';
+  }
+  
+  // Em desenvolvimento local
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:4000';
+  }
+  
+  // Fallback: usar mesmo domínio
+  return `${window.location.origin}`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
+console.log('🔌 API Base URL:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
