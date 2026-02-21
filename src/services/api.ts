@@ -3,18 +3,30 @@ import axios from 'axios';
 // Detectar a URL do backend baseado no hostname
 const getApiBaseUrl = () => {
   const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
   
-  // Em produção em projeto.kreativ.ae
+  console.log('🔍 Detectando Backend URL:', { hostname, protocol });
+  
+  // Em produção em projeto.kreativ.ae (via proxy/DNS)
   if (hostname === 'projeto.kreativ.ae' || hostname === 'www.projeto.kreativ.ae') {
+    console.log('✅ Usando Render backend para projeto.kreativ.ae');
     return 'https://projeto-crm-1.onrender.com';
+  }
+  
+  // Em produção via Render direto
+  if (hostname.includes('onrender.com')) {
+    console.log('✅ Usando mesmo domínio para Render');
+    return `${protocol}//${hostname}`;
   }
   
   // Em desenvolvimento local
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    console.log('✅ Usando localhost backend');
     return 'http://localhost:4000';
   }
   
-  // Fallback: usar mesmo domínio
+  // Fallback: usar mesmo protocolo e domínio
+  console.log('⚠️  Fallback: usando origem da página');
   return `${window.location.origin}`;
 };
 
