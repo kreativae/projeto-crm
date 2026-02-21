@@ -29,13 +29,29 @@ const STAGE_CONFIG = [
   { id: 'perdido', name: 'Perdido', color: '#ef4444', gradient: 'from-red-500 to-red-600', light: 'bg-red-50 text-red-700 border-red-200' },
 ];
 
-const SOURCES = ['Site', 'Indicação', 'WhatsApp', 'Instagram', 'Facebook', 'Google Ads', 'LinkedIn', 'Telefone', 'Email', 'Outro'];
-const TEMPERATURES = ['frio', 'morno', 'quente'];
+const SOURCES = [
+  { label: 'Site', value: 'website' },
+  { label: 'Indicação', value: 'indicacao' },
+  { label: 'WhatsApp', value: 'whatsapp' },
+  { label: 'Instagram', value: 'instagram' },
+  { label: 'Facebook', value: 'facebook' },
+  { label: 'Google Ads', value: 'google_ads' },
+  { label: 'LinkedIn', value: 'linkedin' },
+  { label: 'Telefone', value: 'telefone' },
+  { label: 'Email', value: 'email' },
+  { label: 'Outro', value: 'outro' }
+];
+
+const TEMPERATURES = [
+  { label: '🧊 Frio', value: 'cold' },
+  { label: '🌤 Morno', value: 'warm' },
+  { label: '🔥 Quente', value: 'hot' }
+];
 
 const emptyLead: Partial<PipelineLead> = {
   name: '', email: '', phone: '', mobile: '', company: '', status: 'novo',
-  source: 'Site', tags: [], value: 0, type: 'PF', document: '',
-  temperature: 'morno', notes: '',
+  source: 'website', tags: [], value: 0, type: 'PF', document: '',
+  temperature: 'warm', notes: '',
   address: { street: '', city: '', state: '', zip: '' }
 };
 
@@ -126,10 +142,10 @@ const LeadForm = ({
         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
           <Globe className="h-3.5 w-3.5" /> Origem
         </label>
-        <select value={form.source || 'Site'} onChange={e => setForm({ ...form, source: e.target.value })}
+        <select value={form.source || 'website'} onChange={e => setForm({ ...form, source: e.target.value })}
           className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900
             focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all">
-          {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+          {SOURCES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
       </div>
     </div>
@@ -152,14 +168,14 @@ const LeadForm = ({
         </label>
         <div className="flex gap-2">
           {TEMPERATURES.map(t => (
-            <button key={t} onClick={() => setForm({ ...form, temperature: t })}
+            <button key={t.value} onClick={() => setForm({ ...form, temperature: t.value })}
               className={cn('flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border text-center',
-                form.temperature === t
-                  ? t === 'quente' ? 'bg-red-50 border-red-300 text-red-700'
-                    : t === 'morno' ? 'bg-amber-50 border-amber-300 text-amber-700'
+                form.temperature === t.value
+                  ? t.value === 'hot' ? 'bg-red-50 border-red-300 text-red-700'
+                    : t.value === 'warm' ? 'bg-amber-50 border-amber-300 text-amber-700'
                       : 'bg-blue-50 border-blue-300 text-blue-700'
                   : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300')}>
-              {t === 'quente' ? '🔥' : t === 'morno' ? '🌤️' : '🧊'} {t.charAt(0).toUpperCase() + t.slice(1)}
+              {t.label}
             </button>
           ))}
         </div>

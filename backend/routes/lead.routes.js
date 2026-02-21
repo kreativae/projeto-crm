@@ -26,6 +26,10 @@ router.use(authenticate, tenantIsolation);
 router.get('/', asyncHandler(async (req, res) => {
   const { status, isClient, search, source, tag, page = 1, limit = 50 } = req.query;
   
+  if (!req.tenantId) {
+    return res.status(400).json({ success: false, error: 'Identificação do tenant não encontrada' });
+  }
+
   const filter = { tenantId: req.tenantId };
   if (status) filter.status = status;
   if (isClient !== undefined) filter.isClient = isClient === 'true';
@@ -40,12 +44,15 @@ router.get('/', asyncHandler(async (req, res) => {
     ];
   }
 
-  const skip = (Number(page) - 1) * Number(limit);
+  const validatedPage = Math.max(1, parseInt(page) || 1);
+  const validatedLimit = Math.min(200, Math.max(1, parseInt(limit) || 50));
+  const skip = (validatedPage - 1) * validatedLimit;
+
   const [leads, total] = await Promise.all([
     Lead.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(Number(limit))
+      .limit(validatedLimit)
       .populate('responsibleId', 'name email avatar'),
     Lead.countDocuments(filter),
   ]);
@@ -54,8 +61,8 @@ router.get('/', asyncHandler(async (req, res) => {
     success: true,
     leads, 
     total, 
-    page: Number(page), 
-    pages: Math.ceil(total / Number(limit)) 
+    page: validatedPage, 
+    pages: Math.ceil(total / validatedLimit) 
   });
 }));
 
@@ -72,7 +79,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
 // POST /api/leads — Criar lead
 router.post('/', asyncHandler(async (req, res) => {
-  const { name, email, phone, mobile, company, value, status, source, tags, temperature, score, notes } = req.body;
+  const { name, email, phone, mobile, company, value, status, source, tags, temperature, score, notes, type, document } = req.body;
 
   // Validações básicas
   if (!name || typeof name !== 'string' || !name.trim()) {
@@ -85,6 +92,8 @@ router.post('/', asyncHandler(async (req, res) => {
     phone: phone?.trim() || undefined,
     mobile: mobile?.trim() || undefined,
     company: company || undefined,
+    type: type || (document?.length > 11 ? 'PJ' : 'PF'),
+    document: document || undefined,
     value: value ? Number(value) : 0,
     status: status || 'novo',
     source: source || 'outro',

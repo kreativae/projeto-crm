@@ -85,13 +85,21 @@ const leadSchema = new mongoose.Schema(
     // ---- Classificação ----
     source: {
       type: String,
-      enum: ['google_ads', 'facebook_ads', 'instagram', 'linkedin', 'website', 'indicacao', 'telegram', 'email', 'telefone', 'evento', 'outro'],
+      enum: [
+        'google_ads', 'facebook_ads', 'instagram', 'linkedin', 'website', 'indicacao', 
+        'telegram', 'email', 'telefone', 'evento', 'outro', 'site', 'whatsapp', 'facebook', 'linkedin',
+        'Site', 'Indicação', 'WhatsApp', 'Instagram', 'Facebook', 'Google Ads', 'LinkedIn', 'Telefone', 'Email', 'Outro'
+      ],
       default: 'outro',
     },
     sourceDetails: String,
     tags: [{ type: String, trim: true }],
     score: { type: Number, default: 0, min: 0, max: 100 },
-    temperature: { type: String, enum: ['cold', 'warm', 'hot'], default: 'cold' },
+    temperature: { 
+      type: String, 
+      enum: ['cold', 'warm', 'hot', 'frio', 'morno', 'quente', 'Frio', 'Morno', 'Quente'], 
+      default: 'cold' 
+    },
 
     // ---- Financeiro ----
     value: { type: Number, default: 0, min: 0 },
