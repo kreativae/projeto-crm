@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 dotenv.config(); // Carregar .env PRIMEIRO
 
 import express from 'express';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -158,6 +159,52 @@ const startServer = async () => {
     app.locals.CalendarEvent = CalendarEvent;
     app.locals.AIConversation = AIConversation;
     app.locals.Session = Session;
+
+    // Seeder Automático: Garantir que o usuário demo existe no backend
+    // Isso evita 401 Unauthorized na tela de login de novos usuários
+    const ensureDemoUser = async () => {
+      try {
+        const demoEmail = 'carlos@nexuscrm.com';
+        const user = await User.findOne({ email: demoEmail });
+        
+        if (!user) {
+          console.log('🌱 Criando tenant e usuário administrador de demonstração...');
+          
+          // Criar um Tenant demo estável
+          const tenant = await Tenant.findOne({ slug: 'nexuscrm-demo' }) || await Tenant.create({
+            _id: new mongoose.Types.ObjectId('654321012345678901234567'), // ID fixo para consistência
+            name: 'NexusCRM Demo',
+            slug: 'nexuscrm-demo',
+            email: 'contato@nexuscrm.com',
+            phone: '(11) 99999-0000',
+            plan: 'enterprise',
+            status: 'active'
+          });
+
+          // Criar Usuário Admin Demo (senha: admin123)
+          // Usamos o método normal para o middleware de hash carregar
+          await User.create({
+            _id: new mongoose.Types.ObjectId('654321098765432109876543'), // ID fixo para consistência
+            tenantId: tenant._id,
+            name: 'Carlos Silva',
+            email: demoEmail,
+            password: 'admin123',
+            role: 'admin',
+            status: 'active',
+            emailVerified: true
+          });
+          
+          tenant.ownerId = new mongoose.Types.ObjectId('654321098765432109876543');
+          await tenant.save();
+          console.log('✅ Demo Administrator (carlos@nexuscrm.com) criado com sucesso');
+        } else {
+          console.log('✅ Demo Administrator já existe');
+        }
+      } catch (err) {
+        console.error('⚠️ Erro ao verificar/criar usuário demo:', err.message);
+      }
+    };
+    await ensureDemoUser();
 
     // Iniciar servidor
     app.listen(config.port, () => {
