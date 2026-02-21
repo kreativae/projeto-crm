@@ -325,7 +325,7 @@ export function PipelinePage() {
 
       {/* Empresa */}
       {form.type === 'PJ' && (
-        <FormInput label="Empresa" icon={Building2} value={form.company || ''}
+        <FormInput label="Empresa" icon={Building2} value={typeof form.company === 'string' ? form.company : form.company?.name || ''}
           onChange={v => setForm({ ...form, company: v })} placeholder="Nome da empresa" />
       )}
 
@@ -560,7 +560,7 @@ export function PipelinePage() {
                         </div>
                         {lead.company && (
                           <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
-                            <Building2 className="h-3 w-3" />{lead.company}
+                            <Building2 className="h-3 w-3" />{typeof lead.company === 'string' ? lead.company : lead.company?.name || ''}
                           </div>
                         )}
                         <div className="flex items-center gap-3 text-xs text-slate-400 mt-2">
@@ -677,7 +677,7 @@ export function PipelinePage() {
               <div className="flex items-center gap-2 mt-1">
                 {selectedLead.company && (
                   <span className="text-sm text-slate-500 flex items-center gap-1">
-                    <Building2 className="h-3.5 w-3.5" />{selectedLead.company}
+                    <Building2 className="h-3.5 w-3.5" />{typeof selectedLead.company === 'string' ? selectedLead.company : selectedLead.company?.name || ''}
                   </span>
                 )}
                 {selectedLead.temperature && (

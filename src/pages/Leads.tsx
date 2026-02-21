@@ -197,7 +197,12 @@ export function LeadsPage() {
 
   const filtered = leads.filter(l => {
     const s = searchTerm.toLowerCase();
-    const matchSearch = !s || l.name?.toLowerCase().includes(s) || l.email?.toLowerCase().includes(s) || l.company?.toLowerCase().includes(s) || l.phone?.includes(s);
+    const companyName = (typeof l.company === 'string' ? l.company : l.company?.name || '').toLowerCase();
+    const matchSearch = !s || 
+      l.name?.toLowerCase().includes(s) || 
+      l.email?.toLowerCase().includes(s) || 
+      companyName.includes(s) || 
+      l.phone?.includes(s);
     const matchStatus = !filterStatus || l.status === filterStatus;
     const matchType = !filterType || l.type === filterType;
     return matchSearch && matchStatus && matchType;
@@ -527,7 +532,7 @@ export function LeadsPage() {
                           <p className="text-sm font-semibold text-slate-900">{lead.name}</p>
                           {lead.isClient && <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded-md font-bold">CLIENTE</span>}
                         </div>
-                        {lead.company && <p className="text-xs text-slate-500 flex items-center gap-1"><Building2 className="h-3 w-3" /> {lead.company}</p>}
+                        {lead.company && <p className="text-xs text-slate-500 flex items-center gap-1"><Building2 className="h-3 w-3" /> {typeof lead.company === 'string' ? lead.company : lead.company?.name || ''}</p>}
                       </div>
                     </div>
                   </td>
@@ -718,7 +723,7 @@ export function LeadsPage() {
                       {selectedLead.isClient && <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md font-bold">CLIENTE</span>}
                       <span className={cn('px-2 py-0.5 rounded-md text-xs font-bold border', selectedLead.type === 'PJ' ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-sky-50 text-sky-700 border-sky-200')}>{selectedLead.type}</span>
                     </div>
-                    {selectedLead.company && <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5"><Building2 className="h-3.5 w-3.5" /> {selectedLead.company}</p>}
+                    {selectedLead.company && <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5"><Building2 className="h-3.5 w-3.5" /> {typeof selectedLead.company === 'string' ? selectedLead.company : selectedLead.company?.name || ''}</p>}
                     <div className="flex items-center gap-3 mt-2 flex-wrap">
                       <span className={cn('px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center gap-1', statusConfig[selectedLead.status]?.color)}>
                         {statusConfig[selectedLead.status]?.icon}{statusConfig[selectedLead.status]?.label}
