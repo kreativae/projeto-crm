@@ -187,9 +187,12 @@ export function LeadsPage() {
       setLeads(leadsData);
     } catch (err: any) {
       console.error('Erro ao carregar leads:', err);
-      setError(err.response?.data?.message || 'Erro ao carregar leads');
-      // Se falhar, carrega mock dados como fallback
-      setLeads(mockLeads.map(enrichLead));
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      setError('Falha ao sincronizar com o servidor: ' + errorMsg);
+      // Fallback para mock apenas se for ambiente de desenvolvimento puro (localhost)
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        setLeads(mockLeads.map(enrichLead));
+      }
     } finally {
       setLoading(false);
     }
