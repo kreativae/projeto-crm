@@ -30,7 +30,7 @@ const getApiBaseUrl = () => {
   return `${window.location.origin}`;
 };
 
-const API_VERSION = '1.0.4-fix-rendering-error';
+const API_VERSION = '1.0.5-fix-typing-lag';
 const API_BASE_URL = getApiBaseUrl();
 console.log(`🚀 NexusCRM API Version: ${API_VERSION}`);
 console.log('🔌 API Base URL:', API_BASE_URL);

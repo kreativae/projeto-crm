@@ -39,6 +39,198 @@ const emptyLead: Partial<PipelineLead> = {
   address: { street: '', city: '', state: '', zip: '' }
 };
 
+// === INPUT COMPONENT ===
+const FormInput = ({ label, icon: Icon, value, onChange, type = 'text', placeholder = '', required = false }: {
+  label: string; icon: any; value: string | number; onChange: (v: string) => void;
+  type?: string; placeholder?: string; required?: boolean;
+}) => (
+  <div>
+    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+      <Icon className="h-3.5 w-3.5" /> {label} {required && <span className="text-red-400">*</span>}
+    </label>
+    <input type={type} value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900
+        focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all
+        placeholder:text-slate-400" />
+  </div>
+);
+
+// === TAG HELPERS ===
+const addTag = (form: Partial<PipelineLead>, setForm: (f: Partial<PipelineLead>) => void, tag: string) => {
+  if (tag.trim() && !(form.tags || []).includes(tag.trim())) {
+    setForm({ ...form, tags: [...(form.tags || []), tag.trim()] });
+  }
+};
+const removeTag = (form: Partial<PipelineLead>, setForm: (f: Partial<PipelineLead>) => void, tag: string) => {
+  setForm({ ...form, tags: (form.tags || []).filter(t => t !== tag) });
+};
+
+// === FORM FIELDS (reusable for create/edit) ===
+const LeadForm = ({
+  form,
+  setForm,
+  currentTagInput,
+  setCurrentTagInput,
+  currentTagRef
+}: {
+  form: Partial<PipelineLead>;
+  setForm: (f: Partial<PipelineLead>) => void;
+  currentTagInput: string;
+  setCurrentTagInput: (v: string) => void;
+  currentTagRef: React.RefObject<HTMLInputElement | null>;
+}) => (
+  <div className="space-y-5">
+    {/* Tipo PF/PJ */}
+    <div>
+      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Tipo</label>
+      <div className="flex gap-2">
+        {['PF', 'PJ'].map(t => (
+          <button key={t} onClick={() => setForm({ ...form, type: t })}
+            className={cn('flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border',
+              form.type === t
+                ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm'
+                : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300')}>
+            {t === 'PF' ? '👤 Pessoa Física' : '🏢 Pessoa Jurídica'}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {/* Nome e Documento */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <FormInput label="Nome completo" icon={User} value={form.name || ''} required
+        onChange={v => setForm({ ...form, name: v })} placeholder="Nome do lead" />
+      <FormInput label={form.type === 'PJ' ? 'CNPJ' : 'CPF'} icon={Hash} value={form.document || ''}
+        onChange={v => setForm({ ...form, document: v })} placeholder={form.type === 'PJ' ? '00.000.000/0001-00' : '000.000.000-00'} />
+    </div>
+
+    {/* Contato */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <FormInput label="Email" icon={Mail} value={form.email || ''} type="email"
+        onChange={v => setForm({ ...form, email: v })} placeholder="email@exemplo.com" />
+      <FormInput label="Telefone" icon={Phone} value={form.phone || ''}
+        onChange={v => setForm({ ...form, phone: v })} placeholder="(11) 99999-0000" />
+    </div>
+
+    {/* Empresa */}
+    {form.type === 'PJ' && (
+      <FormInput label="Empresa" icon={Building2} value={typeof form.company === 'string' ? form.company : form.company?.name || ''}
+        onChange={v => setForm({ ...form, company: v })} placeholder="Nome da empresa" />
+    )}
+
+    {/* Valor e Origem */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <FormInput label="Valor do deal (R$)" icon={DollarSign} value={form.value || 0} type="number"
+        onChange={v => setForm({ ...form, value: parseFloat(v) || 0 })} placeholder="0" />
+      <div>
+        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <Globe className="h-3.5 w-3.5" /> Origem
+        </label>
+        <select value={form.source || 'Site'} onChange={e => setForm({ ...form, source: e.target.value })}
+          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900
+            focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all">
+          {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+    </div>
+
+    {/* Etapa e Temperatura */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <TrendingUp className="h-3.5 w-3.5" /> Etapa do Pipeline
+        </label>
+        <select value={form.status || 'novo'} onChange={e => setForm({ ...form, status: e.target.value })}
+          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900
+            focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all">
+          {STAGE_CONFIG.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <AlertCircle className="h-3.5 w-3.5" /> Temperatura
+        </label>
+        <div className="flex gap-2">
+          {TEMPERATURES.map(t => (
+            <button key={t} onClick={() => setForm({ ...form, temperature: t })}
+              className={cn('flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border text-center',
+                form.temperature === t
+                  ? t === 'quente' ? 'bg-red-50 border-red-300 text-red-700'
+                    : t === 'morno' ? 'bg-amber-50 border-amber-300 text-amber-700'
+                      : 'bg-blue-50 border-blue-300 text-blue-700'
+                  : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300')}>
+              {t === 'quente' ? '🔥' : t === 'morno' ? '🌤️' : '🧊'} {t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* Endereço */}
+    <div>
+      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <MapPin className="h-3.5 w-3.5" /> Endereço
+      </label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <input value={form.address?.street || ''} onChange={e => setForm({ ...form, address: { ...form.address, street: e.target.value } })}
+          placeholder="Rua / Avenida" className="col-span-2 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400" />
+        <input value={form.address?.city || ''} onChange={e => setForm({ ...form, address: { ...form.address, city: e.target.value } })}
+          placeholder="Cidade" className="px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400" />
+        <div className="flex gap-3">
+          <input value={form.address?.state || ''} onChange={e => setForm({ ...form, address: { ...form.address, state: e.target.value } })}
+            placeholder="UF" className="w-20 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400" />
+          <input value={form.address?.zip || ''} onChange={e => setForm({ ...form, address: { ...form.address, zip: e.target.value } })}
+            placeholder="CEP" className="flex-1 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400" />
+        </div>
+      </div>
+    </div>
+
+    {/* Tags */}
+    <div>
+      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+        <Tag className="h-3.5 w-3.5" /> Tags
+      </label>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {(form.tags || []).map(tag => (
+          <span key={tag} className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-lg border border-indigo-200">
+            {tag}
+            <button onClick={() => removeTag(form, setForm, tag)} className="hover:text-red-500 transition-colors">
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input ref={currentTagRef} value={currentTagInput} onChange={e => setCurrentTagInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              addTag(form, setForm, currentTagInput);
+              setCurrentTagInput('');
+            }
+          }}
+          placeholder="Digite e pressione Enter" className="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400" />
+        <button onClick={() => { addTag(form, setForm, currentTagInput); setCurrentTagInput(''); }}
+          className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-semibold hover:bg-indigo-100 transition-colors border border-indigo-200">
+          + Tag
+        </button>
+      </div>
+    </div>
+
+    {/* Notas */}
+    <div>
+      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+        <FileText className="h-3.5 w-3.5" /> Observações
+      </label>
+      <textarea value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
+        rows={3} placeholder="Notas sobre o lead..."
+        className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900
+          focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all
+          placeholder:text-slate-400 resize-none" />
+    </div>
+  </div>
+);
+
 export function PipelinePage() {
   const [leads, setLeads] = useState<PipelineLead[]>(() =>
     mockLeads.map(l => ({
@@ -266,182 +458,6 @@ export function PipelinePage() {
     setSlideMode('view');
   };
 
-  // === INPUT COMPONENT ===
-  const FormInput = ({ label, icon: Icon, value, onChange, type = 'text', placeholder = '', required = false }: {
-    label: string; icon: typeof Mail; value: string | number; onChange: (v: string) => void;
-    type?: string; placeholder?: string; required?: boolean;
-  }) => (
-    <div>
-      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-        <Icon className="h-3.5 w-3.5" /> {label} {required && <span className="text-red-400">*</span>}
-      </label>
-      <input type={type} value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900
-          focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all
-          placeholder:text-slate-400" />
-    </div>
-  );
-
-  // === FORM FIELDS (reusable for create/edit) ===
-  const renderFormFields = (
-    form: Partial<PipelineLead>,
-    setForm: (f: Partial<PipelineLead>) => void,
-    currentTagInput: string,
-    setCurrentTagInput: (v: string) => void,
-    currentTagRef: React.RefObject<HTMLInputElement | null>
-  ) => (
-    <div className="space-y-5">
-      {/* Tipo PF/PJ */}
-      <div>
-        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Tipo</label>
-        <div className="flex gap-2">
-          {['PF', 'PJ'].map(t => (
-            <button key={t} onClick={() => setForm({ ...form, type: t })}
-              className={cn('flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border',
-                form.type === t
-                  ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm'
-                  : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300')}>
-              {t === 'PF' ? '👤 Pessoa Física' : '🏢 Pessoa Jurídica'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Nome e Documento */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormInput label="Nome completo" icon={User} value={form.name || ''} required
-          onChange={v => setForm({ ...form, name: v })} placeholder="Nome do lead" />
-        <FormInput label={form.type === 'PJ' ? 'CNPJ' : 'CPF'} icon={Hash} value={form.document || ''}
-          onChange={v => setForm({ ...form, document: v })} placeholder={form.type === 'PJ' ? '00.000.000/0001-00' : '000.000.000-00'} />
-      </div>
-
-      {/* Contato */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormInput label="Email" icon={Mail} value={form.email || ''} type="email"
-          onChange={v => setForm({ ...form, email: v })} placeholder="email@exemplo.com" />
-        <FormInput label="Telefone" icon={Phone} value={form.phone || ''}
-          onChange={v => setForm({ ...form, phone: v })} placeholder="(11) 99999-0000" />
-      </div>
-
-      {/* Empresa */}
-      {form.type === 'PJ' && (
-        <FormInput label="Empresa" icon={Building2} value={typeof form.company === 'string' ? form.company : form.company?.name || ''}
-          onChange={v => setForm({ ...form, company: v })} placeholder="Nome da empresa" />
-      )}
-
-      {/* Valor e Origem */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormInput label="Valor do deal (R$)" icon={DollarSign} value={form.value || 0} type="number"
-          onChange={v => setForm({ ...form, value: parseFloat(v) || 0 })} placeholder="0" />
-        <div>
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-            <Globe className="h-3.5 w-3.5" /> Origem
-          </label>
-          <select value={form.source || 'Site'} onChange={e => setForm({ ...form, source: e.target.value })}
-            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900
-              focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all">
-            {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* Etapa e Temperatura */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-            <TrendingUp className="h-3.5 w-3.5" /> Etapa do Pipeline
-          </label>
-          <select value={form.status || 'novo'} onChange={e => setForm({ ...form, status: e.target.value })}
-            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900
-              focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all">
-            {STAGE_CONFIG.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-            <AlertCircle className="h-3.5 w-3.5" /> Temperatura
-          </label>
-          <div className="flex gap-2">
-            {TEMPERATURES.map(t => (
-              <button key={t} onClick={() => setForm({ ...form, temperature: t })}
-                className={cn('flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border text-center',
-                  form.temperature === t
-                    ? t === 'quente' ? 'bg-red-50 border-red-300 text-red-700'
-                      : t === 'morno' ? 'bg-amber-50 border-amber-300 text-amber-700'
-                        : 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300')}>
-                {t === 'quente' ? '🔥' : t === 'morno' ? '🌤️' : '🧊'} {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Endereço */}
-      <div>
-        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          <MapPin className="h-3.5 w-3.5" /> Endereço
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input value={form.address?.street || ''} onChange={e => setForm({ ...form, address: { ...form.address, street: e.target.value } })}
-            placeholder="Rua / Avenida" className="col-span-2 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400" />
-          <input value={form.address?.city || ''} onChange={e => setForm({ ...form, address: { ...form.address, city: e.target.value } })}
-            placeholder="Cidade" className="px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400" />
-          <div className="flex gap-3">
-            <input value={form.address?.state || ''} onChange={e => setForm({ ...form, address: { ...form.address, state: e.target.value } })}
-              placeholder="UF" className="w-20 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400" />
-            <input value={form.address?.zip || ''} onChange={e => setForm({ ...form, address: { ...form.address, zip: e.target.value } })}
-              placeholder="CEP" className="flex-1 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Tags */}
-      <div>
-        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-          <Tag className="h-3.5 w-3.5" /> Tags
-        </label>
-        <div className="flex flex-wrap gap-2 mb-2">
-          {(form.tags || []).map(tag => (
-            <span key={tag} className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-lg border border-indigo-200">
-              {tag}
-              <button onClick={() => removeTag(form, setForm, tag)} className="hover:text-red-500 transition-colors">
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <input ref={currentTagRef} value={currentTagInput} onChange={e => setCurrentTagInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addTag(form, setForm, currentTagInput);
-                setCurrentTagInput('');
-              }
-            }}
-            placeholder="Digite e pressione Enter" className="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all placeholder:text-slate-400" />
-          <button onClick={() => { addTag(form, setForm, currentTagInput); setCurrentTagInput(''); }}
-            className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-semibold hover:bg-indigo-100 transition-colors border border-indigo-200">
-            + Tag
-          </button>
-        </div>
-      </div>
-
-      {/* Notas */}
-      <div>
-        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-          <FileText className="h-3.5 w-3.5" /> Observações
-        </label>
-        <textarea value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
-          rows={3} placeholder="Notas sobre o lead..."
-          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900
-            focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all
-            placeholder:text-slate-400 resize-none" />
-      </div>
-    </div>
-  );
-
   const getStageConfig = (id: string) => STAGE_CONFIG.find(s => s.id === id);
 
   return (
@@ -627,7 +643,13 @@ export function PipelinePage() {
 
               {/* Modal Body */}
               <div className="flex-1 overflow-y-auto p-6">
-                {renderFormFields(createForm, setCreateForm, createTagInput, setCreateTagInput, createTagRef)}
+                <LeadForm
+                  form={createForm}
+                  setForm={setCreateForm}
+                  currentTagInput={createTagInput}
+                  setCurrentTagInput={setCreateTagInput}
+                  currentTagRef={createTagRef}
+                />
               </div>
 
               {/* Modal Footer */}
@@ -815,7 +837,13 @@ export function PipelinePage() {
           {/* EDIT MODE */}
           {slideMode === 'edit' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {renderFormFields(editForm, setEditForm, tagInput, setTagInput, tagRef)}
+              <LeadForm
+                form={editForm}
+                setForm={setEditForm}
+                currentTagInput={tagInput}
+                setCurrentTagInput={setTagInput}
+                currentTagRef={tagRef}
+              />
 
               {/* Save / Cancel */}
               <div className="flex gap-3 mt-6 pt-4 border-t border-slate-200">
