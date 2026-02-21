@@ -6,6 +6,7 @@ import {
   Lightbulb, ChevronRight, Copy, Check
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import api from '@/services/api';
 
 // Types
 interface AIMessage {
@@ -89,14 +90,12 @@ export function AIPage() {
   useEffect(() => {
     const loadInsights = async () => {
       try {
-        const { default: api } = await import('@/services/api');
         const res = await api.get('/api/ai/insights');
         if (res.data?.data?.insights) setInsights(res.data.data.insights);
       } catch { /* use mock */ }
     };
     const loadConversations = async () => {
       try {
-        const { default: api } = await import('@/services/api');
         const res = await api.get('/api/ai/conversations');
         if (res.data?.data?.conversations) setConversations(res.data.data.conversations);
       } catch { /* empty */ }
@@ -119,7 +118,6 @@ export function AIPage() {
     setIsTyping(true);
 
     try {
-      const { default: api } = await import('@/services/api');
       const res = await api.post('/api/ai/chat', { message: text.trim(), conversationId: activeConvo?._id });
       const data = res.data?.data;
       if (data?.response) {
@@ -167,7 +165,6 @@ export function AIPage() {
       setMessages(convo.messages);
     } else {
       try {
-        const { default: api } = await import('@/services/api');
         const res = await api.get(`/api/ai/conversations/${convo._id}`);
         if (res.data?.data?.conversation?.messages) {
           setMessages(res.data.data.conversation.messages);
@@ -177,7 +174,7 @@ export function AIPage() {
   };
 
   const deleteConversation = async (id: string) => {
-    try { const { default: api } = await import('@/services/api'); await api.delete(`/api/ai/conversations/${id}`); } catch { /* ok */ }
+    try { await api.delete(`/api/ai/conversations/${id}`); } catch { /* ok */ }
     setConversations(prev => prev.filter(c => c._id !== id));
     if (activeConvo?._id === id) { setActiveConvo(null); setMessages([]); }
   };

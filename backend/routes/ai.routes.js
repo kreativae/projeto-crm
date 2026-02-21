@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import Lead from '../../bancodedados/models/Lead.js';
 import { Conversation, Message } from '../../bancodedados/models/Message.js';
 import CalendarEvent from '../../bancodedados/models/CalendarEvent.js';
@@ -22,6 +23,11 @@ async function gatherCRMData(tenantId) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
+  // Garantir que tenantId é um ObjectId para agregação
+  const tId = mongoose.Types.ObjectId.isValid(tenantId) 
+    ? new mongoose.Types.ObjectId(tenantId) 
+    : tenantId;
+
   const [
     totalLeads, newLeadsMonth, leadsByStatus, leadsBySource,
     hotLeads, totalValue, wonDeals, lostDeals,
@@ -31,10 +37,10 @@ async function gatherCRMData(tenantId) {
   ] = await Promise.all([
     Lead.countDocuments({ tenantId }),
     Lead.countDocuments({ tenantId, createdAt: { $gte: thirtyDaysAgo } }),
-    Lead.aggregate([{ $match: { tenantId: tenantId } }, { $group: { _id: '$status', count: { $sum: 1 }, totalValue: { $sum: '$value' } } }]),
-    Lead.aggregate([{ $match: { tenantId: tenantId } }, { $group: { _id: '$source', count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
+    Lead.aggregate([{ $match: { tenantId: tId } }, { $group: { _id: '$status', count: { $sum: 1 }, totalValue: { $sum: '$value' } } }]),
+    Lead.aggregate([{ $match: { tenantId: tId } }, { $group: { _id: '$source', count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
     Lead.find({ tenantId, temperature: 'hot' }).select('name value status stage responsibleName').limit(10),
-    Lead.aggregate([{ $match: { tenantId: tenantId } }, { $group: { _id: null, total: { $sum: '$value' } } }]),
+    Lead.aggregate([{ $match: { tenantId: tId } }, { $group: { _id: null, total: { $sum: '$value' } } }]),
     Lead.countDocuments({ tenantId, status: 'ganho' }),
     Lead.countDocuments({ tenantId, status: 'perdido' }),
     Conversation.find({ tenantId }).sort({ lastMessageAt: -1 }).limit(10).select('externalContactName channel status unreadCount lastMessage lastMessageAt'),

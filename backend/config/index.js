@@ -23,7 +23,7 @@ const config = {
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || 'nexuscrm_access_secret_dev_2025',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'nexuscrm_refresh_secret_dev_2025',
-    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES || '15m',
+    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES || '2h', // Aumentado para 2h para melhor UX em dev
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES || '7d',
   },
 
