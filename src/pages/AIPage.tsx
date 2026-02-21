@@ -90,14 +90,14 @@ export function AIPage() {
     const loadInsights = async () => {
       try {
         const { default: api } = await import('@/services/api');
-        const res = await api.get('/ai/insights');
+        const res = await api.get('/api/ai/insights');
         if (res.data?.data?.insights) setInsights(res.data.data.insights);
       } catch { /* use mock */ }
     };
     const loadConversations = async () => {
       try {
         const { default: api } = await import('@/services/api');
-        const res = await api.get('/ai/conversations');
+        const res = await api.get('/api/ai/conversations');
         if (res.data?.data?.conversations) setConversations(res.data.data.conversations);
       } catch { /* empty */ }
     };
@@ -120,7 +120,7 @@ export function AIPage() {
 
     try {
       const { default: api } = await import('@/services/api');
-      const res = await api.post('/ai/chat', { message: text.trim(), conversationId: activeConvo?._id });
+      const res = await api.post('/api/ai/chat', { message: text.trim(), conversationId: activeConvo?._id });
       const data = res.data?.data;
       if (data?.response) {
         const assistantMsg: AIMessage = { role: 'assistant', content: data.response.content, type: data.response.type, metadata: data.response.metadata, createdAt: new Date().toISOString() };
@@ -168,7 +168,7 @@ export function AIPage() {
     } else {
       try {
         const { default: api } = await import('@/services/api');
-        const res = await api.get(`/ai/conversations/${convo._id}`);
+        const res = await api.get(`/api/ai/conversations/${convo._id}`);
         if (res.data?.data?.conversation?.messages) {
           setMessages(res.data.data.conversation.messages);
         }
@@ -177,7 +177,7 @@ export function AIPage() {
   };
 
   const deleteConversation = async (id: string) => {
-    try { const { default: api } = await import('@/services/api'); await api.delete(`/ai/conversations/${id}`); } catch { /* ok */ }
+    try { const { default: api } = await import('@/services/api'); await api.delete(`/api/ai/conversations/${id}`); } catch { /* ok */ }
     setConversations(prev => prev.filter(c => c._id !== id));
     if (activeConvo?._id === id) { setActiveConvo(null); setMessages([]); }
   };

@@ -12,23 +12,23 @@ export interface User {
 
 const userService = {
   getAll: async () => {
-    const response = await api.get('/users');
+    const response = await api.get('/api/users');
     return response.data;
   },
 
   create: async (data: Partial<User>) => {
     // Normalmente envia email de convite
-    const response = await api.post('/users', data);
+    const response = await api.post('/api/users', data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<User>) => {
-    const response = await api.put(`/users/${id}`, data);
+    const response = await api.put(`/api/users/${id}`, data);
     return response.data;
   },
 
   delete: async (id: string) => {
-    const response = await api.delete(`/users/${id}`);
+    const response = await api.delete(`/api/users/${id}`);
     return response.data;
   },
 };

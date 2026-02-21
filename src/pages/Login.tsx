@@ -32,7 +32,7 @@ export function LoginPage({ onForgot, onRegister }: { onForgot?: () => void; onR
     await new Promise(r => setTimeout(r, 600));
     try {
       const { default: api } = await import('../services/api');
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('/api/auth/login', { email, password });
       const d = response.data?.data || response.data;
       login(d.tokens?.accessToken || d.token, d.user);
     } catch {

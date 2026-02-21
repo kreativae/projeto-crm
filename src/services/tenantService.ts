@@ -36,32 +36,32 @@ export interface TenantSettings {
 
 export const tenantService = {
   getSettings: async (): Promise<TenantSettings> => {
-    const response = await api.get('/tenants/current');
+    const response = await api.get('/api/tenants/current');
     return response.data;
   },
 
   updateSettings: async (data: Partial<TenantSettings>) => {
-    const response = await api.put('/tenants/settings', data);
+    const response = await api.put('/api/tenants/settings', data);
     return response.data;
   },
 
   updateIntegration: async (data: { provider: string; apiKey: string; active: boolean }) => {
-    const response = await api.post('/tenants/integrations', data);
+    const response = await api.post('/api/tenants/integrations', data);
     return response.data;
   },
 
   addWebhook: async (data: { url: string; events: string[] }) => {
-    const response = await api.post('/tenants/webhooks', data);
+    const response = await api.post('/api/tenants/webhooks', data);
     return response.data;
   },
 
   removeWebhook: async (id: string) => {
-    const response = await api.delete(`/tenants/webhooks/${id}`);
+    const response = await api.delete(`/api/tenants/webhooks/${id}`);
     return response.data;
   },
 
   generateApiKey: async (name: string) => {
-    const response = await api.post('/tenants/apikeys', { name });
+    const response = await api.post('/api/tenants/apikeys', { name });
     return response.data;
   }
 };

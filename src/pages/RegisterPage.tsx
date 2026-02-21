@@ -36,16 +36,22 @@ export default function RegisterPage({ onNavigate }: Props) {
     if (!validateStep2()) return;
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/api/auth/register', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: form.name, email: form.email, password: form.password, companyName: form.company, phone: form.phone }),
+      const { default: api } = await import('../services/api');
+      const res = await api.post('/api/auth/register', { 
+        name: form.name, 
+        email: form.email, 
+        password: form.password, 
+        companyName: form.company, 
+        phone: form.phone 
       });
-      if (res.ok) { setStep(3); }
-      else { const d = await res.json(); setErrors({ submit: d.message || 'Erro ao cadastrar' }); }
-    } catch {
-      // Fallback — simula sucesso
-      await new Promise(r => setTimeout(r, 1500));
-      setStep(3);
+      if (res.status === 201 || res.status === 200) { 
+        setStep(3); 
+      }
+      else { 
+        setErrors({ submit: res.data?.message || 'Erro ao cadastrar' }); 
+      }
+    } catch (error: any) {
+      setErrors({ submit: error.response?.data?.message || 'Erro ao cadastrar' });
     }
     setLoading(false);
   };

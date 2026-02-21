@@ -24,12 +24,12 @@ export interface Lead {
 
 const leadService = {
   getAll: async () => {
-    const response = await api.get('/leads');
+    const response = await api.get('/api/leads');
     return response.data;
   },
 
   getById: async (id: string) => {
-    const response = await api.get(`/leads/${id}`);
+    const response = await api.get(`/api/leads/${id}`);
     return response.data;
   },
 
@@ -60,7 +60,7 @@ const leadService = {
     // Remover campos undefined
     Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
 
-    const response = await api.post('/leads', data);
+    const response = await api.post('/api/leads', data);
     return response.data;
   },
 
@@ -80,12 +80,12 @@ const leadService = {
     if (lead.score !== undefined) data.score = lead.score;
     if (lead.notes) data.notes = lead.notes;
 
-    const response = await api.put(`/leads/${id}`, data);
+    const response = await api.put(`/api/leads/${id}`, data);
     return response.data;
   },
 
   delete: async (id: string) => {
-    const response = await api.delete(`/leads/${id}`);
+    const response = await api.delete(`/api/leads/${id}`);
     return response.data;
   },
 };

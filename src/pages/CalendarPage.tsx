@@ -264,13 +264,10 @@ export function CalendarPage() {
 
     // Backend call (fire and forget, falls back to mock)
     try {
-      fetch(`http://localhost:4000/api/calendar/${draggedEvent.id}/reschedule`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        },
-        body: JSON.stringify({ newDate, newTime: draggedEvent.time })
+      const { default: api } = await import('../services/api');
+      api.patch(`/api/calendar/${draggedEvent.id}/reschedule`, { 
+        newDate, 
+        newTime: draggedEvent.time 
       }).catch(() => { /* Backend offline, local state is already updated */ });
     } catch { /* ignore */ }
 
@@ -285,13 +282,9 @@ export function CalendarPage() {
 
     // Undo in backend too
     try {
-      fetch(`http://localhost:4000/api/calendar/${lastDrop.eventId}/reschedule`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        },
-        body: JSON.stringify({ newDate: lastDrop.fromDate })
+      const { default: api } = await import('../services/api');
+      api.patch(`/api/calendar/${lastDrop.eventId}/reschedule`, { 
+        newDate: lastDrop.fromDate 
       }).catch(() => {});
     } catch { /* ignore */ }
 

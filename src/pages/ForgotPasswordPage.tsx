@@ -16,7 +16,8 @@ export default function ForgotPasswordPage({ onNavigate }: Props) {
     if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) { setError('Informe um email válido'); return; }
     setLoading(true); setError('');
     try {
-      await fetch('http://localhost:4000/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const { default: api } = await import('../services/api');
+      await api.post('/api/auth/forgot-password', { email });
     } catch { /* fallback */ }
     await new Promise(r => setTimeout(r, 1000));
     setLoading(false); setStep('code');
@@ -49,10 +50,8 @@ export default function ForgotPasswordPage({ onNavigate }: Props) {
     if (password !== confirmPassword) { setError('Senhas não conferem'); return; }
     setLoading(true); setError('');
     try {
-      await fetch('http://localhost:4000/api/auth/reset-password', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, token: code.join(''), newPassword: password }),
-      });
+      const { default: api } = await import('../services/api');
+      await api.post('/api/auth/reset-password', { email, token: code.join(''), newPassword: password });
     } catch { /* fallback */ }
     await new Promise(r => setTimeout(r, 1000));
     setLoading(false); setStep('done');
