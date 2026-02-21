@@ -231,6 +231,162 @@ const LeadForm = ({
   </div>
 );
 
+// === CREATE MODAL COMPONENT ===
+const CreateLeadModal = ({
+  open,
+  onClose,
+  onCreated,
+  showToast
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: (lead: PipelineLead) => void;
+  showToast: (m: string, t?: 'success' | 'error') => void;
+}) => {
+  const [form, setForm] = useState<Partial<PipelineLead>>({ ...emptyLead });
+  const [tagInput, setTagInput] = useState('');
+  const tagRef = useRef<HTMLInputElement>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      setForm({ ...emptyLead });
+      setTagInput('');
+    }
+  }, [open]);
+
+  const handleCreate = async () => {
+    if (!form.name?.trim()) return;
+    setSaving(true);
+    try {
+      const res = await leadService.create(form);
+      const newLead: PipelineLead = {
+        _id: res._id || `local-${Date.now()}`,
+        name: form.name || '',
+        email: form.email || '',
+        phone: form.phone || '',
+        mobile: form.mobile || '',
+        company: form.company || '',
+        status: form.status || 'novo',
+        source: form.source || 'Site',
+        tags: form.tags || [],
+        value: form.value || 0,
+        createdAt: new Date().toISOString(),
+        type: form.type || 'PF',
+        document: form.document || '',
+        temperature: form.temperature || 'morno',
+        notes: form.notes || '',
+        address: form.address,
+      };
+      onCreated(newLead);
+      showToast('Lead criado com sucesso!');
+      onClose();
+    } catch {
+      // Fallback local
+      const newLead: PipelineLead = {
+        _id: `local-${Date.now()}`,
+        name: form.name || '',
+        email: form.email || '',
+        phone: form.phone || '',
+        mobile: form.mobile || '',
+        company: form.company || '',
+        status: form.status || 'novo',
+        source: form.source || 'Site',
+        tags: form.tags || [],
+        value: form.value || 0,
+        createdAt: new Date().toISOString(),
+        type: form.type || 'PF',
+        document: form.document || '',
+        temperature: form.temperature || 'morno',
+        notes: form.notes || '',
+        address: form.address,
+      };
+      onCreated(newLead);
+      showToast('Lead criado localmente');
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-start justify-center pt-10 px-4"
+          onClick={onClose}>
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" />
+
+          {/* Modal */}
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            onClick={e => e.stopPropagation()}
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[85vh] flex flex-col z-10">
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-200 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                  <Plus className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Novo Lead</h2>
+                  <p className="text-xs text-slate-500">Preencha os dados do lead</p>
+                </div>
+              </div>
+              <button onClick={onClose}
+                className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <LeadForm 
+                form={form} 
+                setForm={setForm} 
+                currentTagInput={tagInput} 
+                setCurrentTagInput={setTagInput} 
+                currentTagRef={tagRef} 
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-slate-200 bg-slate-50/50 rounded-b-2xl flex-shrink-0">
+              <button onClick={onClose}
+                className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
+                Cancelar
+              </button>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                onClick={handleCreate} disabled={saving || !form.name?.trim()}
+                className={cn(
+                  'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg',
+                  saving || !form.name?.trim()
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-indigo-600/25 hover:shadow-indigo-600/40'
+                )}>
+                {saving ? (
+                  <>
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" /> Criar Lead
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export function PipelinePage() {
   const [leads, setLeads] = useState<PipelineLead[]>(() =>
     mockLeads.map(l => ({
@@ -252,15 +408,13 @@ export function PipelinePage() {
 
   // Modal (Create)
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState<Partial<PipelineLead>>({ ...emptyLead });
+
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Tags input
   const [tagInput, setTagInput] = useState('');
-  const [createTagInput, setCreateTagInput] = useState('');
   const tagRef = useRef<HTMLInputElement>(null);
-  const createTagRef = useRef<HTMLInputElement>(null);
 
   const stages = useMemo(() =>
     STAGE_CONFIG.map(s => ({ ...s, leads: leads.filter(l => l.status === s.id) })),
@@ -340,65 +494,6 @@ export function PipelinePage() {
   const handleDragEnd = () => {
     setDraggedLead(null);
     setDragOverStage(null);
-  };
-
-  // === CREATE ===
-  const handleCreate = async () => {
-    if (!createForm.name?.trim()) return;
-    setSaving(true);
-    try {
-      const res = await leadService.create(createForm);
-      const newLead: PipelineLead = {
-        _id: res._id || `local-${Date.now()}`,
-        name: createForm.name || '',
-        email: createForm.email || '',
-        phone: createForm.phone || '',
-        mobile: createForm.mobile || '',
-        company: createForm.company || '',
-        status: createForm.status || 'novo',
-        source: createForm.source || 'Site',
-        tags: createForm.tags || [],
-        value: createForm.value || 0,
-        createdAt: new Date().toISOString(),
-        type: createForm.type || 'PF',
-        document: createForm.document || '',
-        temperature: createForm.temperature || 'morno',
-        notes: createForm.notes || '',
-        address: createForm.address,
-      };
-      setLeads(p => [...p, newLead]);
-      showToast('Lead criado com sucesso!');
-      setShowCreateModal(false);
-      setCreateForm({ ...emptyLead });
-      setCreateTagInput('');
-    } catch {
-      // Fallback local
-      const newLead: PipelineLead = {
-        _id: `local-${Date.now()}`,
-        name: createForm.name || '',
-        email: createForm.email || '',
-        phone: createForm.phone || '',
-        mobile: createForm.mobile || '',
-        company: createForm.company || '',
-        status: createForm.status || 'novo',
-        source: createForm.source || 'Site',
-        tags: createForm.tags || [],
-        value: createForm.value || 0,
-        createdAt: new Date().toISOString(),
-        type: createForm.type || 'PF',
-        document: createForm.document || '',
-        temperature: createForm.temperature || 'morno',
-        notes: createForm.notes || '',
-        address: createForm.address,
-      };
-      setLeads(p => [...p, newLead]);
-      showToast('Lead criado localmente');
-      setShowCreateModal(false);
-      setCreateForm({ ...emptyLead });
-      setCreateTagInput('');
-    } finally {
-      setSaving(false);
-    }
   };
 
   // === UPDATE ===
@@ -484,7 +579,7 @@ export function PipelinePage() {
             </div>
             {/* Novo Lead Button */}
             <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-              onClick={() => { setCreateForm({ ...emptyLead }); setCreateTagInput(''); setShowCreateModal(true); }}
+              onClick={() => setShowCreateModal(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-shadow">
               <Plus className="h-4 w-4" /> Novo Lead
             </motion.button>
@@ -610,79 +705,12 @@ export function PipelinePage() {
       </div>
 
       {/* =================== CREATE MODAL =================== */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-start justify-center pt-10 px-4"
-            onClick={() => setShowCreateModal(false)}>
-            {/* Backdrop */}
-            <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" />
-
-            {/* Modal */}
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              onClick={e => e.stopPropagation()}
-              className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[85vh] flex flex-col z-10">
-
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-200 flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                    <Plus className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">Novo Lead</h2>
-                    <p className="text-xs text-slate-500">Preencha os dados do lead</p>
-                  </div>
-                </div>
-                <button onClick={() => setShowCreateModal(false)}
-                  className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                  <X className="h-5 w-5 text-slate-400" />
-                </button>
-              </div>
-
-              {/* Modal Body */}
-              <div className="flex-1 overflow-y-auto p-6">
-                <LeadForm
-                  form={createForm}
-                  setForm={setCreateForm}
-                  currentTagInput={createTagInput}
-                  setCurrentTagInput={setCreateTagInput}
-                  currentTagRef={createTagRef}
-                />
-              </div>
-
-              {/* Modal Footer */}
-              <div className="flex items-center justify-between p-6 border-t border-slate-200 bg-slate-50/50 rounded-b-2xl flex-shrink-0">
-                <button onClick={() => setShowCreateModal(false)}
-                  className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
-                  Cancelar
-                </button>
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  onClick={handleCreate} disabled={saving || !createForm.name?.trim()}
-                  className={cn(
-                    'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg',
-                    saving || !createForm.name?.trim()
-                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-indigo-600/25 hover:shadow-indigo-600/40'
-                  )}>
-                  {saving ? (
-                    <>
-                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
-                      Salvando...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-4 w-4" /> Criar Lead
-                    </>
-                  )}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <CreateLeadModal 
+        open={showCreateModal} 
+        onClose={() => setShowCreateModal(false)}
+        onCreated={(newLead) => setLeads(p => [...p, newLead])}
+        showToast={showToast}
+      />
 
       {/* =================== SLIDEOVER (VIEW / EDIT) =================== */}
       {selectedLead && (

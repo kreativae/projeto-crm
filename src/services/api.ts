@@ -62,3 +62,5 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+export const APP_VERSION = '1.0.5-fix-typing-lag'; // Versão com correção de performance (typing lag)
