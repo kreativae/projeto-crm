@@ -44,6 +44,12 @@ const app = express();
 // Middlewares Globais
 // ============================================================
 
+// Debugging: Log incoming requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} from ${req.headers.origin || 'no-origin'}`);
+  next();
+});
+
 // Segurança HTTP headers (OWASP)
 app.use(helmet());
 
@@ -102,6 +108,7 @@ app.get('/api/health', (req, res) => {
 // ============================================================
 // Rotas da API
 // ============================================================
+// Permitir acesso com e sem prefixo /api/ para maior compatibilidade
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/leads', leadRoutes);
@@ -113,6 +120,19 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/ai', aiRoutes);
+
+// Fallback: remover prefixo se necessário (opcional)
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/leads', leadRoutes);
+app.use('/messages', messageRoutes);
+app.use('/automations', automationRoutes);
+app.use('/analytics', analyticsRoutes);
+app.use('/tenants', tenantRoutes);
+app.use('/webhooks', webhookRoutes);
+app.use('/calendar', calendarRoutes);
+app.use('/templates', templateRoutes);
+app.use('/ai', aiRoutes);
 
 // ============================================================
 // Error Handling

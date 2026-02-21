@@ -29,7 +29,7 @@ const config = {
 
   // ---- CORS ----
   cors: {
-    origin: (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000,https://projeto.kreativ.ae,https://projeto-crm-1.onrender.com').split(',').map(o => o.trim()),
+    origin: (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000,http://localhost:4000,https://projeto.kreativ.ae,https://www.projeto.kreativ.ae,https://projeto-crm-1.onrender.com').split(',').map(o => o.trim()),
     credentials: true,
   },
 
