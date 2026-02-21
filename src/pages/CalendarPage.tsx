@@ -240,7 +240,7 @@ export function CalendarPage() {
     setTimeout(() => document.body.removeChild(ghost), 0);
   }, []);
 
-  const handleDrop = useCallback((targetDay: number) => {
+  const handleDrop = useCallback(async (targetDay: number) => {
     if (!draggedEvent) return;
 
     const newDate = dateStr(y, m, targetDay);
@@ -274,7 +274,7 @@ export function CalendarPage() {
     setDraggedEvent(null);
   }, [draggedEvent, y, m]);
 
-  const handleUndoDrop = useCallback(() => {
+  const handleUndoDrop = useCallback(async () => {
     if (!lastDrop) return;
     setEvents(prev => prev.map(e =>
       e.id === lastDrop.eventId ? { ...e, date: lastDrop.fromDate } : e
